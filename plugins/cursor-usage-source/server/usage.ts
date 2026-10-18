@@ -12,6 +12,7 @@ import {
   type UsageAccount,
   type UsageReport,
   type UsageBalance,
+  type UsageScope,
   type UsageWindow,
 } from "@getpaseo/plugin/server/usage";
 
@@ -254,6 +255,7 @@ async function readToken(input: UsageInput): Promise<string | undefined> {
       : await readCursorTokenFromAuthJson(input.locator);
   return token ?? undefined;
 }
+
 export async function discover(): Promise<UsageAccount[]> {
   const home = homedir();
   const candidates: UsageInput[] = ["CURSOR_ACCESS_TOKEN", "CURSOR_TOKEN"].map((locator) => ({
@@ -282,4 +284,31 @@ export async function discover(): Promise<UsageAccount[]> {
   );
   for (const input of candidates) if (await readToken(input)) return [{ key: "default", input }];
   return [];
+}
+
+// Resolves the login a cursor-agent session runs on. The key matches global discovery so
+// the session's login joins the host's Cursor card instead of adding a second one.
+export async function discoverSession(
+  scope: Extract<UsageScope, { kind: "session" }>,
+  platform: NodeJS.Platform = process.platform,
+): Promise<UsageAccount[]> {
+  if (scope.provider !== "cursor") return [];
+  const locator = cursorAgentAuthPath(scope.env, platform);
+  if (!locator) return [];
+  const input: UsageInput = { store: "file", locator };
+  return (await readToken(input)) ? [{ key: "default", input }] : [];
+}
+
+// Mirrors cursor-agent's credential store. Env credentials win over the stored login and
+// can't be named by an input. AGENT_CLI_CREDENTIAL_STORE picks "file" or "memory"; by
+// default macOS keeps the login in the Keychain and other platforms in auth.json.
+function cursorAgentAuthPath(env: Record<string, string>, platform: NodeJS.Platform) {
+  if (env.CURSOR_API_KEY || env.CURSOR_AUTH_TOKEN) return null;
+  const store = env.AGENT_CLI_CREDENTIAL_STORE;
+  if (store === "memory" || (platform === "darwin" && store !== "file")) return null;
+  const home = env.HOME || env.USERPROFILE || homedir();
+  if (platform === "win32")
+    return join(env.APPDATA || join(home, "AppData", "Roaming"), "Cursor", "auth.json");
+  if (platform === "darwin") return join(home, ".cursor", "auth.json");
+  return join(env.XDG_CONFIG_HOME || join(home, ".config"), "cursor", "auth.json");
 }
