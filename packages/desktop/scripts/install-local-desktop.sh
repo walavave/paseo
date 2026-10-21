@@ -124,7 +124,8 @@ find_release_artifact() {
         newest="$candidate"
       fi
     done
-    log "Multiple ${suffix} artifacts found; using ${newest}"
+    # Callers capture stdout, so the notice must go to stderr.
+    printf 'Multiple %s artifacts found; using %s\n' "$suffix" "$newest" >&2
     printf '%s\n' "$newest"
     return
   fi
@@ -132,8 +133,28 @@ find_release_artifact() {
   printf '%s\n' "${matches[0]}"
 }
 
+linux_main_process_path() {
+  local format="$PACKAGE_FORMAT"
+  if [ -z "$format" ]; then
+    format="$(detect_linux_package_format)"
+  fi
+
+  case "$format" in
+    appimage) printf '%s\n' "${HOME}/.local/bin/${APP_NAME}.AppImage" ;;
+    *) printf '%s\n' "/opt/${APP_NAME}/${APP_NAME}.bin" ;;
+  esac
+}
+
 quit_running_app() {
-  if ! pgrep -xq "$APP_NAME"; then
+  local main_path=""
+  if [ "$OS_NAME" = "linux" ]; then
+    main_path="$(linux_main_process_path)"
+  fi
+
+  if [ "$OS_NAME" = "linux" ]; then
+    # The launcher execs Paseo.bin, so match the main process by full command line.
+    pgrep -fx "$main_path" >/dev/null 2>&1 || return
+  elif ! pgrep -x "$APP_NAME" >/dev/null 2>&1; then
     return
   fi
 
@@ -144,12 +165,16 @@ quit_running_app() {
       osascript -e "quit app \"${APP_NAME}\"" >/dev/null 2>&1 || true
       ;;
     linux)
-      pkill -x "$APP_NAME" >/dev/null 2>&1 || true
+      pkill -fx "$main_path" >/dev/null 2>&1 || true
       ;;
   esac
 
   for _ in $(seq 1 40); do
-    if ! pgrep -xq "$APP_NAME"; then
+    if [ "$OS_NAME" = "linux" ]; then
+      if ! pgrep -fx "$main_path" >/dev/null 2>&1; then
+        return
+      fi
+    elif ! pgrep -x "$APP_NAME" >/dev/null 2>&1; then
       return
     fi
     sleep 0.25
@@ -250,26 +275,36 @@ require_command() {
 
 install_linux_deb() {
   require_command dpkg
+  require_command dpkg-deb
   require_command sudo
 
   local deb_file
   deb_file="$(find_release_artifact ".deb")"
 
+  local expected_version
+  expected_version="$(dpkg-deb -f "$deb_file" Version)"
+
   log "Installing ${deb_file} with dpkg..."
-  sudo dpkg -i "$deb_file" || {
+  if ! sudo dpkg -i "$deb_file"; then
     if command -v apt-get >/dev/null 2>&1; then
       log "Repairing package dependencies..."
       sudo apt-get install -f -y
+      log "Retrying ${deb_file} with dpkg..."
+      sudo dpkg -i "$deb_file" || die "dpkg install failed"
     else
       die "dpkg install failed"
     fi
-  }
+  fi
 
   INSTALLED_PATH="/opt/${APP_NAME}/${APP_NAME}"
   if command -v dpkg-query >/dev/null 2>&1; then
     INSTALLED_VERSION="$(dpkg-query -W -f='${Version}' paseo 2>/dev/null || printf 'unknown\n')"
   else
     INSTALLED_VERSION="unknown"
+  fi
+
+  if [ "$INSTALLED_VERSION" != "$expected_version" ]; then
+    die "installed version ${INSTALLED_VERSION} does not match ${deb_file} (${expected_version})"
   fi
 }
 
