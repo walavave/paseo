@@ -189,11 +189,13 @@ build_desktop() {
   (
     cd "$ROOT_DIR"
     export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}"
+    local build_metadata_arg="-c.extraMetadata.paseoBuildKind=local"
 
     case "$OS_NAME" in
       macos)
         export CSC_IDENTITY_AUTO_DISCOVERY=false
         npm run build:desktop -- --publish never --mac "--${ELECTRON_ARCH}" --dir \
+          "$build_metadata_arg" \
           -c.mac.hardenedRuntime=false \
           -c.mac.notarize=false \
           -c.mac.identity=null
@@ -204,6 +206,7 @@ build_desktop() {
           linux_target="$(detect_linux_package_format)"
         fi
         npm run build:desktop -- --publish never --linux "--${ELECTRON_ARCH}" \
+          "$build_metadata_arg" \
           "-c.linux.target=${linux_target}"
         ;;
     esac

@@ -29,6 +29,13 @@ the titlebar row. Production builds leave the variable unset and show no label.
 
 `npm run dev` is only a shorthand for `npm run dev:server`. Keep `127.0.0.1:6767` for the packaged app and production-style `~/.paseo` state.
 
+## Local desktop install
+
+`npm run install:desktop` builds and installs a locally packaged desktop app. The build carries a
+`paseoBuildKind=local` package marker, which disables `electron-updater` checks and installs. Without
+the marker, the embedded GitHub release metadata would replace the local build with the latest
+official release on the next update check or quit.
+
 ## Nix desktop package
 
 The flake exposes `packages.<system>.desktop` on Linux and macOS:

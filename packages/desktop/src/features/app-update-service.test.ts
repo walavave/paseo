@@ -151,11 +151,16 @@ class FakeAppUpdateRuntime implements AppUpdateRuntime {
   }
 }
 
-function createService(input?: { now?: () => number; bucket?: () => Promise<number> }) {
+function createService(input?: {
+  now?: () => number;
+  bucket?: () => Promise<number>;
+  isAutoUpdateDisabled?: () => boolean;
+}) {
   const runtime = new FakeAppUpdateRuntime();
   const service = createAppUpdateService({
     runtime,
     isPackaged: () => true,
+    isAutoUpdateDisabled: input?.isAutoUpdateDisabled ?? (() => false),
     now: input?.now ?? (() => Date.parse("2026-04-28T12:00:00.000Z")),
     bucket: input?.bucket ?? (async () => 0.99),
   });
@@ -169,6 +174,50 @@ const rolledOutUpdate = {
 };
 
 describe("app update service", () => {
+  it("blocks update checks, installs, and quit installs for local builds", async () => {
+    let autoUpdateDisabled = false;
+    const { runtime, service } = createService({
+      isAutoUpdateDisabled: () => autoUpdateDisabled,
+    });
+    runtime.nextCheck({ isUpdateAvailable: true, updateInfo: rolledOutUpdate });
+
+    await service.checkForAppUpdate({
+      currentVersion: "1.2.3",
+      releaseChannel: "stable",
+      intent: "manual",
+    });
+    runtime.finishUpdateDownload(rolledOutUpdate);
+    expect(runtime.checkCount).toBe(1);
+
+    autoUpdateDisabled = true;
+
+    const checkResult = await service.checkForAppUpdate({
+      currentVersion: "1.2.3",
+      releaseChannel: "stable",
+      intent: "manual",
+    });
+    const installResult = await service.downloadAndInstallUpdate({
+      currentVersion: "1.2.3",
+      releaseChannel: "stable",
+    });
+    const installedOnQuit = await service.installUpdateOnQuit({
+      currentVersion: "1.2.3",
+      releaseChannel: "stable",
+      signal: new AbortController().signal,
+    });
+
+    expect(checkResult.hasUpdate).toBe(false);
+    expect(installResult).toEqual({
+      installed: false,
+      version: "1.2.3",
+      message: "Auto-update is disabled for local builds.",
+    });
+    expect(installedOnQuit).toBe(false);
+    expect(runtime.checkCount).toBe(1);
+    expect(runtime.downloadCallCount).toBe(0);
+    expect(runtime.installedVersions).toEqual([]);
+  });
+
   it("does not expose automatic stable updates before the user is admitted to rollout", async () => {
     const { runtime, service } = createService();
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: rolledOutUpdate });

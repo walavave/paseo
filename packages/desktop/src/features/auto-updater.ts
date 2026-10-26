@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { app } from "electron";
@@ -225,6 +226,7 @@ class ElectronAppUpdateRuntime implements AppUpdateRuntime {
 const appUpdateService = createAppUpdateService({
   runtime: new ElectronAppUpdateRuntime(),
   isPackaged: () => app.isPackaged,
+  isAutoUpdateDisabled: isLocalDesktopBuild,
   now: () => Date.now(),
   bucket: async () => bucketFromStagingUserId(await getStagingUserId()),
   reportCheckError: (error) => {
@@ -237,6 +239,24 @@ const appUpdateService = createAppUpdateService({
     console.error("[auto-updater] Failed to download/install update:", message);
   },
 });
+
+export function isLocalBuildPackageJson(packageJson: unknown): boolean {
+  return (
+    typeof packageJson === "object" &&
+    packageJson !== null &&
+    "paseoBuildKind" in packageJson &&
+    packageJson.paseoBuildKind === "local"
+  );
+}
+
+function isLocalDesktopBuild(): boolean {
+  try {
+    const packageJsonPath = path.join(app.getAppPath(), "package.json");
+    return isLocalBuildPackageJson(JSON.parse(readFileSync(packageJsonPath, "utf8")));
+  } catch {
+    return false;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Public API

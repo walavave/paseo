@@ -77,6 +77,7 @@ export interface AppUpdateService {
 export interface AppUpdateServiceDeps {
   runtime: AppUpdateRuntime;
   isPackaged(): boolean;
+  isAutoUpdateDisabled(): boolean;
   now(): number;
   bucket(): Promise<number>;
   reportCheckError?(error: unknown): void;
@@ -136,6 +137,14 @@ function buildDeferredInstallResult(currentVersion: string): AppUpdateInstallRes
     installed: false,
     version: currentVersion,
     message: "Update validation timed out. The update will be installed later.",
+  };
+}
+
+function buildLocalBuildInstallResult(currentVersion: string): AppUpdateInstallResult {
+  return {
+    installed: false,
+    version: currentVersion,
+    message: "Auto-update is disabled for local builds.",
   };
 }
 
@@ -246,7 +255,7 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
     releaseChannel: AppReleaseChannel;
     intent: AppUpdateCheckIntent;
   }): Promise<AppUpdateCheckResult> {
-    if (!deps.isPackaged()) {
+    if (!deps.isPackaged() || deps.isAutoUpdateDisabled()) {
       return buildCheckResult({
         currentVersion,
         hasUpdate: false,
@@ -339,6 +348,10 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
         version: currentVersion,
         message: "Auto-update is not available in development mode.",
       };
+    }
+
+    if (deps.isAutoUpdateDisabled()) {
+      return buildLocalBuildInstallResult(currentVersion);
     }
 
     const check = await checkForAppUpdate({
@@ -473,7 +486,7 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
     releaseChannel: AppReleaseChannel;
     signal: AbortSignal;
   }): Promise<boolean> {
-    if (!deps.isPackaged() || !downloadedUpdateVersion) {
+    if (!deps.isPackaged() || deps.isAutoUpdateDisabled() || !downloadedUpdateVersion) {
       return false;
     }
 

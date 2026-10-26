@@ -1,7 +1,8 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { UUID } from "builder-util-runtime";
+import { app } from "electron";
 import { describe, expect, it, vi } from "vitest";
 
 const { autoUpdaterMock } = vi.hoisted(() => {
@@ -27,6 +28,7 @@ const { autoUpdaterMock } = vi.hoisted(() => {
 
 vi.mock("electron", () => ({
   app: {
+    getAppPath: vi.fn(),
     getPath: vi.fn(),
     isPackaged: true,
   },
@@ -40,6 +42,7 @@ import {
   bucketFromStagingUserId,
   checkForAppUpdate,
   createAppUpdateLifecycleLogger,
+  isLocalBuildPackageJson,
   resolveStagingUserId,
   rolloutManifestSchema,
   shouldAdmitToRollout,
@@ -47,6 +50,37 @@ import {
 } from "./auto-updater";
 
 describe("checkForAppUpdate", () => {
+  it("recognizes only explicit local build metadata", () => {
+    expect(isLocalBuildPackageJson({ paseoBuildKind: "local" })).toBe(true);
+    expect(isLocalBuildPackageJson({ paseoBuildKind: "release" })).toBe(false);
+    expect(isLocalBuildPackageJson({})).toBe(false);
+    expect(isLocalBuildPackageJson(null)).toBe(false);
+  });
+
+  it("does not call electron-updater for a local build", async () => {
+    const appDirectory = await mkdtemp(path.join(os.tmpdir(), "paseo-local-build-"));
+    try {
+      await writeFile(
+        path.join(appDirectory, "package.json"),
+        JSON.stringify({ paseoBuildKind: "local" }),
+      );
+      vi.mocked(app.getAppPath).mockReturnValue(appDirectory);
+      autoUpdaterMock.checkForUpdates.mockClear();
+
+      const result = await checkForAppUpdate({
+        currentVersion: "1.2.3",
+        releaseChannel: "stable",
+        intent: "manual",
+      });
+
+      expect(result.hasUpdate).toBe(false);
+      expect(autoUpdaterMock.checkForUpdates).not.toHaveBeenCalled();
+    } finally {
+      vi.mocked(app.getAppPath).mockReset();
+      await rm(appDirectory, { recursive: true, force: true });
+    }
+  });
+
   it("treats an unpublished channel manifest as an unavailable update", async () => {
     const error = Object.assign(new Error("Cannot find latest-mac.yml"), {
       code: "ERR_UPDATER_CHANNEL_FILE_NOT_FOUND",
