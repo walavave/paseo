@@ -622,6 +622,9 @@ export const ru: TranslationResources = {
       hostDisconnected: "Хост не подключён",
       updateHost: "Обновите хост, чтобы использовать нативный рендерер терминала.",
       unableToSubscribe: "Не удалось подключиться к терминалу",
+      fileUploaded: "Файл загружен",
+      pasteFileFailed: "Не удалось вставить файл: {{reason}}",
+      uploadingFile: "Загрузка файла…",
     },
     sheet: {
       openAsTab: "Открыть во вкладке",
@@ -1180,6 +1183,13 @@ export const ru: TranslationResources = {
       showBackground: "Показать фоновые пространства",
       trigger: "Настройки отображения",
       heading: "Отображение",
+      sort: {
+        label: "Сортировка",
+        created: "Дата создания",
+        manual: "Вручную",
+        lastPrompt: "Последний запрос",
+        updateHost: "Обновите хосты для сортировки рабочих пространств",
+      },
       grouping: {
         label: "Группировка",
         project: "Проект",
@@ -1930,6 +1940,13 @@ export const ru: TranslationResources = {
     backdrop: "Фон меню",
   },
   subagents: {
+    parent: {
+      backToParent: "Назад к родителю",
+      backTo: "Назад к {{label}}",
+      parent: "Родитель",
+      parentAgent: "Родительский агент",
+      openParent: "Открыть родителя",
+    },
     title: "Субагенты",
     pillLabelOne: "1 субагент",
     pillLabelMany: "Субагентов: {{count}}",
@@ -1960,7 +1977,6 @@ export const ru: TranslationResources = {
         alwaysUseExtension: "Всегда использовать для .{{extension}}",
         alwaysUseFilename: "Всегда использовать для {{filename}}",
         option: "{{title}} — {{owner}}",
-        actions: "Действия с файлом",
         builtin: {
           owner: "Paseo",
           markdown: "Markdown",
@@ -1979,6 +1995,8 @@ export const ru: TranslationResources = {
       notFound: "Файл не найден",
       failedToLoadPreview: "Не удалось загрузить предварительный просмотр файла.",
       editor: {
+        preview: "Предпросмотр",
+        source: "Исходный текст",
         fileSize: "Размер файла {{size}}",
         lines: "Строк: {{count}}",
         editorStatus: "Состояние редактора: {{status}}",
@@ -2029,6 +2047,12 @@ export const ru: TranslationResources = {
     subAgentActivity: "Активность субагента",
     input: "Входные данные",
     output: "Выходные данные",
+  },
+  turnSummary: {
+    messages: {
+      one: "написано {{count}} сообщение",
+      other: "написаны сообщения ({{count}})",
+    },
   },
   toolCallGroup: {
     editedFiles: {
@@ -2249,7 +2273,8 @@ export const ru: TranslationResources = {
       automaticHint: "Paseo выбирает быструю доступную модель",
       preferredHint: "Выберите модель, которую использует Paseo",
       model: "Модель",
-      fallbackHint: "Если она недоступна, Paseo использует другую доступную модель",
+      modelHint:
+        "Используется только эта модель. Если она не сработает, Paseo не будет пробовать другую модель",
       docs: "Документация",
       saveError: "Не удалось обновить настройки генерации метаданных",
     },
@@ -2301,12 +2326,13 @@ export const ru: TranslationResources = {
         description:
           "По умолчанию полностью разворачивать блоки размышлений и хода рассуждений агента",
       },
-      toolCallDetail: {
-        label: "Отображение вызовов инструментов",
-        description: "Как вызовы инструментов отображаются на временной шкале",
+      chatDisplay: {
+        label: "Отображение чата",
+        description: "Какую часть работы агента показывает чат",
         options: {
-          overview: "Сводка",
-          detailed: "Все подробности",
+          full: "Полностью",
+          collapseToolCalls: "Сворачивать вызовы инструментов",
+          collapseTurns: "Сворачивать ходы",
         },
       },
       language: {
@@ -2328,11 +2354,6 @@ export const ru: TranslationResources = {
     },
     diagnostics: {
       title: "Диагностика",
-      legacyTerminalRenderer: {
-        label: "Использовать прежний рендерер терминала",
-        description: "Использовать прежний WebView-терминал после повторного открытия",
-        accessibilityLabel: "Использовать прежний рендерер терминала",
-      },
       testAudio: "Проверка звука",
       playTest: "Воспроизвести тестовый звук",
       playing: "Воспроизведение...",

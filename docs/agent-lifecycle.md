@@ -79,7 +79,30 @@ Users can also detach an existing subagent from the subagents track. Detach is d
 
 Agent-originated messages and automatic notifications share a recipient-daemon delivery module. A queued receipt acknowledges admission before provider dispatch, allowing a child to report and finish in the same two-second quiet window. Human prompts dispatch directly. Conflicting explicit interruption or session-mode choices retain separate ordered dispatches.
 
-The pending window is in memory. Clean shutdown flushes it before closing agents; an abrupt crash can lose it. A durable send receipt remains pending until actual dispatch acknowledgment, so a lost window never becomes a completed receipt. Completion waits cover queued admission within their original timeout and cancellation scope.
+The pending message window is in memory. Clean shutdown flushes it before closing agents; an abrupt
+crash can lose queued prompts. A durable send receipt remains pending until actual dispatch
+acknowledgment, so a lost window never becomes a completed receipt. Completion waits cover queued
+admission within their original timeout and cancellation scope.
+
+Finish notification intent has a separate daemon-owned lifetime. The finish-subscriptions module
+persists caller, child, host, and ownership policy through an injectable store; its JSON adapter uses
+`$PASEO_HOME/finish-subscriptions.json`. Registration must commit before creation or queued-prompt
+acknowledgment promises a notification. A pending replacement retains its predecessor until dispatch
+accepts; rejected dispatch removes only the candidate. Recovery coalesces registrations for the same
+caller, child, and host into one watch.
+
+Bootstrap restores these watches after repairing stale running records to `closed` and before opening
+ingress. Reading a closed child's result does not load its provider. A finish notification reports that
+the child's run has settled; the parent decides whether its task is complete. Recovery never resumes
+child work. Archived or deleted parents suppress delivery; parent-owned creation watches also stop
+reporting after detachment.
+
+Intent remains stored until the parent's notification dispatch is acknowledged. Dispatch failure
+retries the captured notification; it does not change the child's reported outcome. Remote host loss
+follows the [connected-host observation policy](connected-hosts.md#delegating-agents). Shutdown stops observation before flushing message delivery, retaining
+outstanding intent. A crash after successful dispatch but before removal commits can repeat the
+notification. Clean shutdown can also flush an already queued callback while retaining its intent,
+so that callback can repeat after restart. This is an at-least-once wakeup, without turn attribution or exactly-once delivery.
 
 Permission requests are notification checkpoints, not the end of that subscription. The caller is notified again after a permission response when the child finishes, errors, or requests another permission.
 The permission notification includes the normalized request plus the child and request IDs, so the caller can inspect it and respond without fetching agent status.
@@ -219,7 +242,7 @@ parentAgentId === thisAgent.id  AND  !archivedAt
 
 - **Provider subagents** are child executions owned by Claude, Codex, or OpenCode. They are not inserted into `AgentManager` as managed agents. Providers emit a separate descriptor and timeline stream through `agent.provider_subagents.*`; the client keeps that state outside the normal agent store and merges only the presentation rows into the track. A descriptor's optional `parentSubagentId` identifies its direct provider-subagent parent; an absent value identifies a direct child of the managed agent.
 
-Clicking either kind opens a workspace tab. On compact layouts it opens in a [sheet](explorer-sidebar.md#sheets) over the subagents list instead; the sheet hides the composer and shows the agent's model and thinking as one line in its place (`PaneSubtitle`, the row provider subagents already use), and a Paseo subagent's sheet offers **Open as tab** (the full-screen glyph in the header) to get the composer back. A Paseo subagent tab is a normal interactive agent pane. A provider subagent tab is a read-only timeline pane with no composer, archive, detach, rewind, or fork actions. It shows its own direct children in a subagents track. Both panes use `AgentStreamView`, so message, reasoning, tool-call, and layout rendering stay identical.
+Clicking either kind opens a workspace tab. On compact layouts it opens in a [sheet](explorer-sidebar.md#sheets) over the subagents list instead; the sheet hides the composer and shows the agent's model and thinking as one line in its place (`PaneSubtitle`, the row provider subagents already use), and a Paseo subagent's sheet offers **Open as tab** (the full-screen glyph in the header) to get the composer back. A Paseo subagent tab is a normal interactive agent pane. A provider subagent tab is a read-only timeline pane with no composer, archive, detach, rewind, or fork actions. It shows its own direct children in a subagents track. Every subagent pane links back to its parent (`packages/app/src/subagents/parent/`): a pill above the composer when there is one, a parent box in the composer's place when there is not. Both panes use `AgentStreamView`, so message, reasoning, tool-call, and layout rendering stay identical.
 
 Provider timelines use the same structural timeline item format but deliberately have a separate lifecycle and transport. A provider thread/session identifier is not a Paseo agent identifier, and closing its tab is always layout-only.
 

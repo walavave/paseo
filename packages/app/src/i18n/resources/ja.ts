@@ -621,6 +621,9 @@ export const ja: TranslationResources = {
       hostDisconnected: "ホストが接続されていません",
       updateHost: "ネイティブターミナルを使用するにはホストを更新してください。",
       unableToSubscribe: "ターミナルに接続できません",
+      fileUploaded: "ファイルをアップロードしました",
+      pasteFileFailed: "ファイルを貼り付けられませんでした: {{reason}}",
+      uploadingFile: "ファイルをアップロード中…",
     },
     sheet: {
       openAsTab: "タブで開く",
@@ -1176,6 +1179,13 @@ export const ja: TranslationResources = {
       showBackground: "バックグラウンドを表示",
       trigger: "表示設定",
       heading: "表示",
+      sort: {
+        label: "並び順",
+        created: "作成日時",
+        manual: "手動",
+        lastPrompt: "最後のプロンプト",
+        updateHost: "ワークスペースを並べ替えるにはホストを更新してください",
+      },
       grouping: {
         label: "グループ化",
         project: "プロジェクト",
@@ -1917,6 +1927,13 @@ export const ja: TranslationResources = {
     backdrop: "メニューの背景",
   },
   subagents: {
+    parent: {
+      backToParent: "親に戻る",
+      backTo: "{{label}} に戻る",
+      parent: "親",
+      parentAgent: "親エージェント",
+      openParent: "親を開く",
+    },
     title: "サブエージェント",
     pillLabelOne: "サブエージェント 1 件",
     pillLabelMany: "サブエージェント {{count}} 件",
@@ -1947,7 +1964,6 @@ export const ja: TranslationResources = {
         alwaysUseExtension: ".{{extension}} に常に使用",
         alwaysUseFilename: "{{filename}} に常に使用",
         option: "{{title}} — {{owner}}",
-        actions: "ファイルの操作",
         builtin: {
           owner: "Paseo",
           markdown: "Markdown",
@@ -1966,6 +1982,8 @@ export const ja: TranslationResources = {
       notFound: "ファイルが見つかりません",
       failedToLoadPreview: "ファイルプレビューの読み込みに失敗しました",
       editor: {
+        preview: "プレビュー",
+        source: "ソース",
         fileSize: "ファイルサイズ {{size}}",
         lines: "{{count}} 行",
         editorStatus: "エディターの状態 {{status}}",
@@ -2016,6 +2034,12 @@ export const ja: TranslationResources = {
     subAgentActivity: "サブエージェントアクティビティ",
     input: "入力",
     output: "出力",
+  },
+  turnSummary: {
+    messages: {
+      one: "{{count}}件のメッセージを送信",
+      other: "{{count}}件のメッセージを送信",
+    },
   },
   toolCallGroup: {
     editedFiles: {
@@ -2237,7 +2261,7 @@ export const ja: TranslationResources = {
       automaticHint: "Paseo が利用可能な高速モデルを選択します",
       preferredHint: "Paseo が使用するモデルを選択します",
       model: "モデル",
-      fallbackHint: "利用できない場合、Paseo は別の利用可能なモデルを使用します",
+      modelHint: "このモデルのみを使用します。失敗しても、Paseo は別のモデルを試しません",
       docs: "ドキュメント",
       saveError: "メタデータ生成を更新できません",
     },
@@ -2285,12 +2309,13 @@ export const ja: TranslationResources = {
         label: "常に思考プロセスを展開",
         description: "デフォルトでAIのエージェント思考・推論ブロックを完全に展開して表示します",
       },
-      toolCallDetail: {
-        label: "ツール呼び出しの表示",
-        description: "タイムラインでのツール呼び出しの表示方法",
+      chatDisplay: {
+        label: "チャットの表示",
+        description: "チャットに表示するエージェントの作業量",
         options: {
-          overview: "要約",
-          detailed: "すべての詳細",
+          full: "すべて",
+          collapseToolCalls: "ツール呼び出しを折りたたむ",
+          collapseTurns: "ターンを折りたたむ",
         },
       },
       language: {
@@ -2312,11 +2337,6 @@ export const ja: TranslationResources = {
     },
     diagnostics: {
       title: "診断",
-      legacyTerminalRenderer: {
-        label: "以前のターミナルレンダラーを使用",
-        description: "ターミナルを開き直した後、以前の WebView ターミナルを使用します",
-        accessibilityLabel: "以前のターミナルレンダラーを使用",
-      },
       testAudio: "音声をテスト",
       playTest: "テスト再生",
       playing: "再生中...",

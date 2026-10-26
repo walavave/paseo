@@ -615,6 +615,9 @@ export const zhCN: TranslationResources = {
       hostDisconnected: "Host 未连接",
       updateHost: "请更新主机以使用原生终端渲染器。",
       unableToSubscribe: "无法订阅 Terminal",
+      fileUploaded: "文件已上传",
+      pasteFileFailed: "无法粘贴文件：{{reason}}",
+      uploadingFile: "正在上传文件…",
     },
     sheet: {
       openAsTab: "作为标签页打开",
@@ -1155,6 +1158,13 @@ export const zhCN: TranslationResources = {
       showBackground: "显示后台工作区",
       trigger: "显示偏好",
       heading: "显示",
+      sort: {
+        label: "排序",
+        created: "创建时间",
+        manual: "手动",
+        lastPrompt: "最近提示词",
+        updateHost: "请更新主机以排序工作区",
+      },
       grouping: {
         label: "分组",
         project: "项目",
@@ -1876,6 +1886,13 @@ export const zhCN: TranslationResources = {
     backdrop: "菜单背景",
   },
   subagents: {
+    parent: {
+      backToParent: "返回父代理",
+      backTo: "返回 {{label}}",
+      parent: "父代理",
+      parentAgent: "父代理",
+      openParent: "打开父代理",
+    },
     title: "Subagent",
     pillLabelOne: "1 个 subagent",
     pillLabelMany: "{{count}} 个 subagent",
@@ -1906,7 +1923,6 @@ export const zhCN: TranslationResources = {
         alwaysUseExtension: "始终用于 .{{extension}}",
         alwaysUseFilename: "始终用于 {{filename}}",
         option: "{{title}} — {{owner}}",
-        actions: "文件操作",
         builtin: {
           owner: "Paseo",
           markdown: "Markdown",
@@ -1925,6 +1941,8 @@ export const zhCN: TranslationResources = {
       notFound: "找不到文件",
       failedToLoadPreview: "加载文件预览失败",
       editor: {
+        preview: "预览",
+        source: "源代码",
         fileSize: "文件大小 {{size}}",
         lines: "{{count}} 行",
         editorStatus: "编辑器状态 {{status}}",
@@ -1974,6 +1992,12 @@ export const zhCN: TranslationResources = {
     subAgentActivity: "Sub-agent 活动",
     input: "输入",
     output: "输出",
+  },
+  turnSummary: {
+    messages: {
+      one: "写了 {{count}} 条消息",
+      other: "写了 {{count}} 条消息",
+    },
   },
   toolCallGroup: {
     editedFiles: {
@@ -2193,7 +2217,7 @@ export const zhCN: TranslationResources = {
       automaticHint: "Paseo 会选择一个可用的快速模型",
       preferredHint: "选择 Paseo 使用的模型",
       model: "模型",
-      fallbackHint: "如果不可用，Paseo 会改用其他可用模型",
+      modelHint: "只使用此模型。如果失败，Paseo 不会尝试其他模型",
       docs: "文档",
       saveError: "无法更新元数据生成设置",
     },
@@ -2240,12 +2264,13 @@ export const zhCN: TranslationResources = {
         label: "始终展开推理过程",
         description: "默认情况下完全展开 AI 的思考和推理过程",
       },
-      toolCallDetail: {
-        label: "工具调用显示",
-        description: "工具调用在时间线中的显示方式",
+      chatDisplay: {
+        label: "聊天显示",
+        description: "聊天中显示多少智能体的工作",
         options: {
-          overview: "摘要",
-          detailed: "完整详情",
+          full: "完整",
+          collapseToolCalls: "折叠工具调用",
+          collapseTurns: "折叠轮次",
         },
       },
       language: {
@@ -2267,11 +2292,6 @@ export const zhCN: TranslationResources = {
     },
     diagnostics: {
       title: "诊断",
-      legacyTerminalRenderer: {
-        label: "使用旧版终端渲染器",
-        description: "重新打开终端后使用之前的 WebView 终端",
-        accessibilityLabel: "使用旧版终端渲染器",
-      },
       testAudio: "测试音频",
       playTest: "播放测试",
       playing: "正在播放...",

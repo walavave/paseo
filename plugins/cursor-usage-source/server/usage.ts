@@ -54,12 +54,6 @@ const CursorBillingCycleTimestampSchema = z.preprocess(
   z.union([z.string(), z.number()]).nullable(),
 );
 
-// Cursor's dashboard percentages include bonus usage; spend / limit does not.
-const CURSOR_USAGE_WINDOWS = [
-  { field: "autoPercentUsed", id: "cursor_models", label: "Cursor Models", summary: true },
-  { field: "apiPercentUsed", id: "other_models", label: "Other Models", summary: true },
-] as const;
-
 const CursorUsageResponseSchema = z.object({
   planUsage: z
     .object({
@@ -68,6 +62,7 @@ const CursorUsageResponseSchema = z.object({
       bonusSpend: ApiNullableNumberSchema,
       remaining: ApiNullableNumberSchema,
       limit: ApiNullableNumberSchema,
+      totalPercentUsed: ApiNullableNumberSchema,
       autoPercentUsed: ApiNullableNumberSchema,
       apiPercentUsed: ApiNullableNumberSchema,
     })
@@ -101,49 +96,6 @@ function parseCursorBillingCycleTimestamp(
 
 function centsToDollars(value: number | null): number | null {
   return value === null ? null : value / 100;
-}
-
-function cursorUsageWindows(
-  planUsage: NonNullable<CursorUsageResponse["planUsage"]>,
-  resetsAt: string | null,
-): UsageWindow[] {
-  const windows: UsageWindow[] = [];
-  for (const { field, id, label, summary } of CURSOR_USAGE_WINDOWS) {
-    const usedPercent = planUsage[field];
-    if (usedPercent === null || !Number.isFinite(usedPercent)) continue;
-    const usedPct = Math.max(0, Math.min(100, usedPercent));
-    windows.push(
-      windowFromUsedPct({
-        id,
-        label,
-        summary,
-        utilizationPct: usedPct,
-        resetsAt,
-        tone: toneFromUsedPct(usedPct),
-      }),
-    );
-  }
-  return windows;
-}
-
-function planUsageBalance(
-  planUsage: NonNullable<CursorUsageResponse["planUsage"]>,
-  resetsAt: string | null,
-): UsageBalance | null {
-  const totalSpend = centsToDollars(planUsage.totalSpend);
-  const remaining = centsToDollars(planUsage.remaining);
-  const limit = centsToDollars(planUsage.limit);
-  if (totalSpend === null && remaining === null && limit === null) return null;
-  return {
-    id: "plan_usage",
-    label: "Plan usage",
-    used: totalSpend,
-    remaining,
-    limit,
-    unit: "usd",
-    resetsAt,
-    tone: toneFromUsedPct(usedPctOf(totalSpend, limit)),
-  };
 }
 
 function readItemTableValue(db: CursorStateDatabase, key: string): string | null {
@@ -230,13 +182,42 @@ export async function fetchUsage(
 
   const resp = CursorUsageResponseSchema.parse(await res.json());
   const billingCycleEnd = parseCursorBillingCycleTimestamp(resp.billingCycleEnd);
-  const windows = resp.planUsage ? cursorUsageWindows(resp.planUsage, billingCycleEnd) : [];
+  const windows: UsageWindow[] = [];
   const balances: UsageBalance[] = [];
-  // Prefer the dashboard percentages. Spend / limit is a fallback for older
-  // payloads that omit the two allowance fields.
-  if (windows.length === 0 && resp.planUsage) {
-    const balance = planUsageBalance(resp.planUsage, billingCycleEnd);
-    if (balance) balances.push(balance);
+  if (resp.planUsage) {
+    // Total spend includes bonus credits; returned percentages measure quota usage.
+    for (const [id, label, usedPct] of [
+      ["plan_usage", "Total", resp.planUsage.totalPercentUsed],
+      ["cursor_usage", "Cursor", resp.planUsage.autoPercentUsed],
+      ["third_party_usage", "Third Party", resp.planUsage.apiPercentUsed],
+    ] as const) {
+      if (usedPct === null) continue;
+      windows.push(
+        windowFromUsedPct({
+          id,
+          label,
+          utilizationPct: usedPct,
+          resetsAt: billingCycleEnd,
+          summary: id === "plan_usage",
+          tone: toneFromUsedPct(usedPct),
+        }),
+      );
+    }
+  }
+  if (resp.planUsage && windows.length === 0) {
+    const totalSpend = centsToDollars(resp.planUsage.totalSpend);
+    const remaining = centsToDollars(resp.planUsage.remaining);
+    const limit = centsToDollars(resp.planUsage.limit);
+    balances.push({
+      id: "plan_usage",
+      label: "Plan usage",
+      used: totalSpend,
+      remaining,
+      limit,
+      unit: "usd",
+      resetsAt: billingCycleEnd,
+      tone: toneFromUsedPct(usedPctOf(totalSpend, limit)),
+    });
   }
 
   return {
